@@ -2,14 +2,12 @@ const ProductManager = require("./ProductManager.js");
 let productManager = new ProductManager();
 
 let persistirProduct = async () => {
-    // Agregamos un producto con 'addProduct' en lugar de 'createProduct'
     await productManager.addProduct('Teclado Mecánico', 'Teclado para gaming', 5000, "http://teclado.png", "TECH456", 50);
 
     let products = await productManager.productList();
     console.log(`Productos encontrados en Product Manager: ${products.length}`);
     console.log(products);
 
-    // Pruebas de los nuevos métodos
     console.log('Obteniendo producto con id 1...');
     let product = await productManager.getProductById(1);
     console.log(product);
