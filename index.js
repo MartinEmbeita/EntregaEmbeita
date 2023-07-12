@@ -1,21 +1,29 @@
 const ProductManager = require("./ProductManager.js");
-
 let productManager = new ProductManager();
 
-productManager.init()
-  .then(async () => {
-    console.log(productManager.getProducts()); // []
+let persistirProduct = async () => {
+    // Agregamos un producto con 'addProduct' en lugar de 'createProduct'
+    await productManager.addProduct('Teclado Mecánico', 'Teclado para gaming', 5000, "http://teclado.png", "TECH456", 50);
 
-    await productManager.addProduct('producto prueba', 'Este es un producto prueba', 200, 'Sin imagen', 'abc123', 25);
-    console.log(productManager.getProducts()); // [ Product {...} ]
+    let products = await productManager.productList();
+    console.log(`Productos encontrados en Product Manager: ${products.length}`);
+    console.log(products);
 
-    let product = productManager.getProductById(1);
-    console.log(product); // Product {...}
+    // Pruebas de los nuevos métodos
+    console.log('Obteniendo producto con id 1...');
+    let product = await productManager.getProductById(1);
+    console.log(product);
 
-    await productManager.updateProduct(1, { price: 300 });
-    console.log(productManager.getProductById(1)); // Product { price: 300, ... }
+    console.log('Actualizando producto con id 1...');
+    await productManager.updateProduct(1, 'Teclado Mecánico', 'Teclado para gaming con luces RGB', 5500, "http://teclado.png", "TECH456", 40);
+    product = await productManager.getProductById(1);
+    console.log(product);
 
+    console.log('Borrando producto con id 1...');
     await productManager.deleteProduct(1);
-    console.log(productManager.getProducts()); // []
-  })
-  .catch(error => console.error(error));
+    products = await productManager.productList();
+    console.log(`Productos encontrados en Product Manager: ${products.length}`);
+    console.log(products);
+};
+
+persistirProduct();
