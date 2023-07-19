@@ -1,105 +1,150 @@
-const fs = require('fs');
-const path = require('path');
+import fsModule from 'fs'; 
 
-class Product {
-    constructor(title, description, price, thumbnail, code, stock, id) {
+class Product{
+    constructor (title, description, price, thumbnail, code, stock){
         this.title = title;
         this.description = description;
         this.price = price;
         this.thumbnail = thumbnail;
         this.code = code;
         this.stock = stock;
-        this.id = id;
     }
 };
 
-class ProductManager {
-    #products;
-    #productDirPath;
-    #productFilePath;
-    #fileSystem;
+export class ProductManager{
+    #productList;
+    #productDir;
+    #productFile;
+    #fsModule;
 
-    constructor() {
-        this.#products = new Array();
-        this.#productDirPath = "./files";
-        this.#productFilePath = this.#productDirPath + "/Products.json";
-        this.#fileSystem = fs;
+    constructor(){
+        this.#productList = [];
+        this.#productDir = "./Products";
+        this.#productFile = `${this.#productDir}/Products.json`;
+        this.#fsModule = fsModule; 
     }
 
-    createProduct = async (title, description, price, thumbnail, code, stock, id) => {
-        let newProduct = new Product(title, description, price, thumbnail, code, stock, id);
-
-        if (!fs.existsSync(this.#productDirPath)) {
-            fs.mkdirSync(this.#productDirPath);
-        }
-        
-        if (!fs.existsSync(this.#productFilePath)) {
-            await fs.promises.writeFile(this.#productFilePath, "[]");
-        }
-
-        let productsFile = await fs.promises.readFile(this.#productFilePath, "utf-8");
-
-        this.#products = JSON.parse(productsFile);
-        
-        this.#products.push(newProduct);
-        
-        await fs.promises.writeFile(this.#productFilePath, JSON.stringify(this.#products, null, 2, '\t'));
+    checkCodeDuplicate (code){
+        return this.#productList.some(product => product.code === code);
     }
 
     addProduct = async (title, description, price, thumbnail, code, stock) => {
-        let id = this.#products.length + 1;
-        await this.createProduct(title, description, price, thumbnail, code, stock, id);
+        let newProduct = new Product(title, description, price, thumbnail, code, stock);
+        try{
+            await this.#fsModule.promises.mkdir(this.#productDir, {recursive: true});
+            
+            if (!this.#fsModule.existsSync(this.#productFile)){
+                await this.#fsModule.promises.writeFile(this.#productFile, '[]');
+            }
+    
+            let productsFileContent = await this.#fsModule.promises.readFile(this.#productFile, 'utf-8');
+    
+            this.#productList = JSON.parse(productsFileContent);
+    
+            if (this.checkCodeDuplicate(newProduct.code)){
+                return {error: 'El producto ya existe'};
+            }
+            let id = this.#productList.length + 1;
+            let productToAdd = {...newProduct, id: id};
+            this.#productList.push(productToAdd);
+            
+            await this.#fsModule.promises.writeFile(this.#productFile, JSON.stringify(this.#productList, null, 2));
+    
+        }
+        catch (error){
+            console.error(`Error al crear el nuevo producto: ${JSON.stringify(newProduct)}, error details: ${error}`);
+            throw Error(`Error al crear el nuevo producto: ${JSON.stringify(newProduct)}, error details: ${error}`);
+        }
     }
 
-    productList = async () => {
-        if (!fs.existsSync(this.#productDirPath)) {
-            fs.mkdirSync(this.#productDirPath);
+    getProducts = async () => {
+        try{
+            await this.#fsModule.promises.mkdir(this.#productDir, {recursive: true});
+            
+            if (!this.#fsModule.existsSync(this.#productFile)){
+                await this.#fsModule.promises.writeFile(this.#productFile, '[]');
+            }
+    
+            let productsFileContent = await this.#fsModule.promises.readFile(this.#productFile, 'utf-8');
+
+            this.#productList = productsFileContent;    
+            return this.#productList;
         }
-
-        if (!fs.existsSync(this.#productFilePath)) {
-            await fs.promises.writeFile(this.#productFilePath, "[]");
+        catch (error){
+            console.error(`Error con el producto: ${error}`);
+            throw Error(`Error con el producto: ${error}`);
         }
-
-        let productsFile = await fs.promises.readFile(this.#productFilePath, "utf-8");
-
-        this.#products = JSON.parse(productsFile);
-        
-        return this.#products;
     }
 
     getProductById = async (id) => {
-        let products = await this.productList();
-        let product = products.find(p => p.id === id);
-        if (!product) {
-            throw new Error('Producto no encontrado');
+        try{
+            await this.#fsModule.promises.mkdir(this.#productDir, {recursive: true});
+            
+            if (!this.#fsModule.existsSync(this.#productFile)){
+                await this.#fsModule.promises.writeFile(this.#productFile, '[]');
+            }
+    
+            let productsFileContent = await this.#fsModule.promises.readFile(this.#productFile, 'utf-8');
+    
+            this.#productList = JSON.parse(productsFileContent);
+    
+            let product = this.#productList.find(product => product.id === id);
+            if (product){
+                console.log(`Product found:`);
+                console.log(product);
+                return product;
+            }
+            
         }
-        return product;
+        catch (error){
+            console.error(`Error al crear producto con id: ${id}, error details: ${error}`);
+        }
     }
 
-        updateProduct = async (id, title, description, price, thumbnail, code, stock) => {
-        let products = await this.productList();
-        let product = products.find(p => p.id === id);
-        if (!product) {
-            throw new Error('Producto no encontrado');
+    updateProduct = async (id, key, value) => {
+        try{
+            await this.#fsModule.promises.mkdir(this.#productDir, {recursive: true});
+            
+            if (!this.#fsModule.existsSync(this.#productFile)){
+                await this.#fsModule.promises.writeFile(this.#productFile, '[]');
+            }
+    
+            let productsFileContent = await this.#fsModule.promises.readFile(this.#productFile, 'utf-8');
+    
+            this.#productList = JSON.parse(productsFileContent);
+    
+            let product = this.#productList.find(product => product.id === id);
+            
+            if (product){
+                product[key] = value;
+                await this.#fsModule.promises.writeFile(this.#productFile, JSON.stringify(this.#productList, null, 2));
+            }    
+        } catch (error){
+            console.error(`Error al crear producto con id: ${id}, error details: ${error}`);
         }
-        product.title = title;
-        product.description = description;
-        product.price = price;
-        product.thumbnail = thumbnail;
-        product.code = code;
-        product.stock = stock;
-        await this.#fileSystem.promises.writeFile(this.#productFilePath, JSON.stringify(products, null, 2, '\t'));
     }
 
     deleteProduct = async (id) => {
-        let products = await this.productList();
-        let productIndex = products.findIndex(p => p.id === id);
-        if (productIndex === -1) {
-            throw new Error('Producto no encontrado');
+        try{
+            await this.#fsModule.promises.mkdir(this.#productDir, {recursive: true});
+            
+            if (!this.#fsModule.existsSync(this.#productFile)){
+                await this.#fsModule.promises.writeFile(this.#productFile, '[]');
+            }
+    
+            let productsFileContent = await this.#fsModule.promises.readFile(this.#productFile, 'utf-8');
+    
+            this.#productList = JSON.parse(productsFileContent);
+    
+            let product = this.#productList.find(product => product.id === id);
+            
+            if (product){
+                this.#productList = this.#productList.filter(product => product.id !== id);
+                await this.#fsModule.promises.writeFile(this.#productFile, JSON.stringify(this.#productList, null, 2));
+            }
+        
+        }catch (error){
+            console.error(`Error al crear producto con id: ${id}, error details: ${error}`);
         }
-        products.splice(productIndex, 1);
-        await this.#fileSystem.promises.writeFile(this.#productFilePath, JSON.stringify(products, null, 2, '\t'));
     }
 }
-
-module.exports = ProductManager;
